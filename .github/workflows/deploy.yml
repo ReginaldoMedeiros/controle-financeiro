@@ -2,7 +2,7 @@ name: Deploy PWA to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/personal-finance-webapp-a0vsh2]
   workflow_dispatch:
 
 permissions:
