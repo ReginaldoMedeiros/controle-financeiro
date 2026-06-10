@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { db, type AccountType } from '../db/db';
 import { useAccounts } from '../hooks/useData';
 import { downloadBackup, importBackup } from '../db/backup';
+import SyncCard from '../components/SyncCard';
 import { Button, Card, Field, SegmentedControl, Sheet, TextInput } from '../components/ui';
 
 export default function Settings() {
@@ -125,6 +126,9 @@ export default function Settings() {
           ⬆️ Restaurar / importar backup
         </Button>
       </Card>
+
+      {/* Sincronização entre dispositivos */}
+      <SyncCard />
 
       {/* Zona de perigo */}
       <Card className="border-red-500/30">

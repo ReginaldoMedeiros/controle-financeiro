@@ -5,9 +5,16 @@ import App from './App';
 import './index.css';
 import { ensureSeed } from './db/seed';
 import { requestPersistentStorage } from './db/db';
+import { registerAutoSync, reconcile } from './db/sync';
 
 // Garante categorias/regras padrão e tenta storage persistente antes de renderizar.
-ensureSeed();
+// Após o seed, liga a sincronização (hooks de auto-push) e reconcilia com o
+// GitHub, se já estiver configurada. O seed roda ANTES dos hooks para não
+// contar como alteração local.
+ensureSeed().then(() => {
+  registerAutoSync();
+  reconcile();
+});
 requestPersistentStorage();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
