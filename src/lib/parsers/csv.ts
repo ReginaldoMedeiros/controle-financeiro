@@ -6,6 +6,8 @@ export interface ColumnMapping {
   dateCol: string;
   descCol: string;
   amountCol: string;
+  /** Coluna de id estável do extrato (ex: Identificador do Nubank), opcional. */
+  idCol?: string;
   /** Coluna separada para crédito (entrada), opcional. */
   creditCol?: string;
   /**
@@ -43,6 +45,7 @@ export function guessMapping(headers: string[]): Partial<ColumnMapping> {
     dateCol: find('data', 'date', 'dt'),
     descCol: find('descri', 'histor', 'lançamento', 'lancamento', 'estabelec', 'title', 'memo'),
     amountCol: find('valor', 'amount', 'value', 'montante', 'débito', 'debito'),
+    idCol: find('identificador', 'identifier', 'transaction id', 'id da transa'),
     creditCol: find('crédito', 'credito', 'entrada'),
   };
 }
@@ -59,6 +62,7 @@ export function applyMapping(
   rows.forEach((row, i) => {
     const dateRaw = (row[map.dateCol] ?? '').trim();
     const desc = (row[map.descCol] ?? '').trim();
+    const externalId = map.idCol ? (row[map.idCol] ?? '').trim() || undefined : undefined;
     const date = normalizeDate(dateRaw);
 
     if (!date) {
@@ -66,12 +70,12 @@ export function applyMapping(
       return;
     }
 
-    let cents = parseToCents(row[map.amountCol] ?? '');
+    const cents = parseToCents(row[map.amountCol] ?? '');
     // Coluna de crédito separada soma como entrada.
     if (map.creditCol) {
       const credit = parseToCents(row[map.creditCol] ?? '');
       if (!Number.isNaN(credit) && credit !== 0) {
-        out.push({ date, description: desc || '(sem descrição)', amountCents: Math.abs(credit), kind: 'income' });
+        out.push({ date, description: desc || '(sem descrição)', amountCents: Math.abs(credit), kind: 'income', externalId });
       }
     }
 
@@ -90,6 +94,7 @@ export function applyMapping(
       description: desc || '(sem descrição)',
       amountCents: Math.abs(cents),
       kind,
+      externalId,
     });
   });
 

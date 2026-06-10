@@ -18,6 +18,8 @@ ok(parseToCents('1234.56') === 123456, 'dot decimal');
 ok(parseToCents('R$ 50,00') === 5000, 'currency symbol');
 ok(parseToCents('-12,30') === -1230, 'negative');
 ok(parseToCents('1.000') === 100000, 'thousands no decimals');
+ok(parseToCents('−45,90') === -4590, 'unicode minus');
+ok(parseToCents('(45,90)') === -4590, 'parenthesis negative');
 ok(Number.isNaN(parseToCents('abc')), 'invalid -> NaN');
 ok(centsToInput(123456) === '1234,56', 'centsToInput');
 ok(formatBRL(123456).includes('1.234,56'), 'formatBRL');
@@ -39,6 +41,20 @@ const res = applyMapping(rows, { ...map, amountMode: 'signed' });
 ok(res.rows.length === 2, 'csv rows');
 ok(res.rows[0].kind === 'expense' && res.rows[0].amountCents === 4590, 'csv expense');
 ok(res.rows[1].kind === 'income' && res.rows[1].amountCents === 300000, 'csv income');
+
+// --- csv Nubank (com Identificador) ---
+const nu =
+  'Data,Valor,Identificador,Descrição\n' +
+  '01/05/2026,-119.00,69f49ab4-cdf2-43ee-a524-9214858724d3,Compra no débito - PETZ\n' +
+  '07/05/2026,5700.00,69fcaabb-3738-4f5a-b766-cca52cee762e,Transferência Recebida - Reginaldo';
+const nuParsed = parseCsvRaw(nu);
+const nuMap = guessMapping(nuParsed.headers);
+ok(nuMap.idCol === 'Identificador', 'detecta coluna Identificador');
+ok(nuMap.amountCol === 'Valor', 'detecta coluna Valor');
+const nuRes = applyMapping(nuParsed.rows, { ...nuMap, amountMode: 'signed' });
+ok(nuRes.rows[0].kind === 'expense' && nuRes.rows[0].amountCents === 11900, 'nubank despesa');
+ok(nuRes.rows[0].externalId === '69f49ab4-cdf2-43ee-a524-9214858724d3', 'externalId preenchido');
+ok(nuRes.rows[1].kind === 'income' && nuRes.rows[1].amountCents === 570000, 'nubank receita');
 
 // --- hash dedupe determinism ---
 const h1 = txHash({ date: '2025-03-05', amountCents: -4590, description: 'IFOOD', accountId: 1 });

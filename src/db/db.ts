@@ -41,6 +41,8 @@ export interface Transaction {
   notes?: string;
   /** Hash determinístico para deduplicar reimportações. */
   hash: string;
+  /** Id externo estável do extrato (ex: Identificador do Nubank) para dedupe robusto. */
+  externalId?: string;
 }
 
 export interface CategoryRule {
@@ -89,6 +91,11 @@ class FinanceDB extends Dexie {
       categoryRules: '++id, categoryId, priority',
       importBatches: '++id, createdAt, accountId',
       recurringItems: '++id, active, kind',
+    });
+    // v2: índice por externalId (Identificador do extrato) para dedupe confiável.
+    this.version(2).stores({
+      transactions:
+        '++id, date, accountId, categoryId, kind, source, importBatchId, hash, externalId',
     });
   }
 }

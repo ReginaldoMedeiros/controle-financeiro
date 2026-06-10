@@ -26,9 +26,12 @@ export function parseToCents(input: string | number): number {
   let s = input.trim();
   if (!s) return NaN;
 
-  // Remove símbolo de moeda e espaços
-  s = s.replace(/r\$/i, '').replace(/\s/g, '');
-  const negative = /^-/.test(s) || /-$/.test(s);
+  // Remove símbolo de moeda e espaços; normaliza "menos" unicode (−, –, —) e
+  // negativos entre parênteses, comuns em extratos/faturas.
+  s = s.replace(/r\$/i, '').replace(/[−–—]/g, '-').replace(/\s/g, '');
+  const parenNegative = /^\(.*\)$/.test(s);
+  if (parenNegative) s = s.replace(/[()]/g, '');
+  const negative = parenNegative || /^-/.test(s) || /-$/.test(s);
   s = s.replace(/-/g, '');
 
   const hasComma = s.includes(',');

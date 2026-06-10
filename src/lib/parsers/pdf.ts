@@ -56,7 +56,9 @@ export async function parsePdf(data: ArrayBuffer, mode: PdfMode): Promise<ParseR
   const yearMatch = lines.join(' ').match(/\b(20\d{2})\b/);
   const fallbackYear = yearMatch ? Number(yearMatch[1]) : new Date().getFullYear();
 
-  for (const line of lines) {
+  for (const raw of lines) {
+    // Normaliza "menos" unicode (−, –, —) para hífen ASCII antes de tudo.
+    const line = raw.replace(/[−–—]/g, '-');
     if (!DATE_START_RE.test(line)) continue;
     const dateMatch = line.match(DATE_START_RE);
     if (!dateMatch) continue;

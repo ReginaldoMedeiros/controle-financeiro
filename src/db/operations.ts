@@ -70,7 +70,11 @@ export async function buildPreview(
     db.transactions.where('accountId').equals(accountId).toArray(),
   ]);
   const existingHashes = new Set(existing.map((t) => t.hash));
-  const seen = new Set<string>();
+  const existingIds = new Set(
+    existing.map((t) => t.externalId).filter((x): x is string => !!x),
+  );
+  const seenHashes = new Set<string>();
+  const seenIds = new Set<string>();
 
   return parsed.map((row) => {
     const signed = row.kind === 'expense' ? -row.amountCents : row.amountCents;
@@ -80,9 +84,16 @@ export async function buildPreview(
       description: row.description,
       accountId,
     });
-    // Duplicata se já existe no banco OU repetida dentro do próprio arquivo.
-    const duplicate = existingHashes.has(hash) || seen.has(hash);
-    seen.add(hash);
+    // Dedupe: prioriza o id estável do extrato (Identificador); senão, usa o hash.
+    // Vale tanto contra o que já está no banco quanto contra repetições no arquivo.
+    let duplicate: boolean;
+    if (row.externalId) {
+      duplicate = existingIds.has(row.externalId) || seenIds.has(row.externalId);
+      seenIds.add(row.externalId);
+    } else {
+      duplicate = existingHashes.has(hash) || seenHashes.has(hash);
+    }
+    seenHashes.add(hash);
     const categoryId = suggestCategory(row.description, row.kind, rules, categories);
     return { ...row, hash, categoryId, duplicate, selected: !duplicate };
   });
@@ -116,6 +127,7 @@ export async function commitImport(
       source: 'import',
       importBatchId: batchId,
       hash: r.hash,
+      externalId: r.externalId,
     }));
     await db.transactions.bulkAdd(txs);
     return { imported: selected.length };

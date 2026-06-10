@@ -8,6 +8,8 @@ export interface ParsedRow {
   /** Valor em centavos, positivo. */
   amountCents: number;
   kind: EntryKind;
+  /** Id estável do extrato (ex: Identificador do Nubank), quando disponível. */
+  externalId?: string;
 }
 
 export type ImportFormat = 'csv' | 'xlsx' | 'pdf';
